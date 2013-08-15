@@ -113,7 +113,10 @@ class RowParser:
     def truncate_zipcodes(self, records):
         for record in records:
             truncated_zipcode = re.search("^\d{5}", record['zipcode'])
-            record['zipcode'] = truncated_zipcode
+            if truncated_zipcode:
+                record['zipcode'] = truncated_zipcode.group(0)
+            else:
+                record['zipcode'] = ''
             
     def normalize_data(self, names, data):
         result = []
