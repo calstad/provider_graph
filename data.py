@@ -21,7 +21,7 @@ class BatchGraphImporter:
         # self.create_name_nodes(record)
 
     def create_provider_node(self, record):
-        self.batch.createcreate_indexed_node_or_fail('providers', 'npi', record['npi']['npi'], record['provider'])
+        self.batch.create_indexed_node_or_fail('providers', 'npi', record['npi']['npi'], record['provider'])
         self.increment_batch_index()
         self.current_provider_index = self.current_batch_index
 
