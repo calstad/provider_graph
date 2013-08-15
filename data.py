@@ -46,19 +46,15 @@ class BatchGraphImporter:
             address_index = self.increment_batch_index()
             self.batch.create(rel((self.current_provider_index, 'has_address', address_index)))
             self.increment_batch_index()
-            self.create_city_node(address_index, address)
             self.create_zipcode_node(address_index, address)
-            
-    def valid_state(self, state):
-        state_validator = re.compile("^[A-Z]{2}$")
-        return state_validator.match(state)
-        
-    def create_city_node(self, address_index, address):
-        city, state = address['city'], address['state']
-        
+
     def add_state_to_node(node_index, rel_name, state):
         state_validator = re.compile("^[A-Z]{2}$")
+        if state_validator.match(state):
+            self.batch.get_or_create_indexed_node('states', 'name', state, {'name' : state})
+            state_node_index = self.increment_batch_index()
+            self.batch.create(rel((node_index, rel, state_node_index)))
+            self.increment_batch_index()
             
-
 bgi = BatchGraphImporter('http://localhost:7474/db/data/')
 
