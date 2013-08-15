@@ -14,6 +14,10 @@ class BatchGraphImporter:
         
     def increment_batch_index(self):
         return self.current_batch_index += 1
+    
+    def relate_nodes(start, relation, end):
+        self.batch.create(rel((start, relation, end)))
+        self.batch.increment_batch_index()
 
     def create_provider_subgraph(self, record):
         self.create_provider_node(record)
@@ -36,16 +40,14 @@ class BatchGraphImporter:
         for name in names:
             self.batch.create(name)
             self.increment_batch_index()
-            self.batch.create(rel((self.current_provider_index, 'has_name', self.current_batch_index)))
-            self.increment_batch_index()
+            self.relate_nodes(self.current_provider_index, 'has_name', self.current_batch_index)
 
     def create_address_nodes(self, record):
         addreses = record['addresses']
         for address in addresses:
             self.batch.create(address)
             address_index = self.increment_batch_index()
-            self.batch.create(rel((self.current_provider_index, 'has_address', address_index)))
-            self.increment_batch_index()
+            self.relate_nodes(self.current_provider_index, 'has_address', address_index)
             self.create_zipcode_node(address_index, address)
 
     def add_state_to_node(node_index, rel_name, state):
@@ -53,8 +55,7 @@ class BatchGraphImporter:
         if state_validator.match(state):
             self.batch.get_or_create_indexed_node('states', 'name', state, {'name' : state})
             state_node_index = self.increment_batch_index()
-            self.batch.create(rel((node_index, rel, state_node_index)))
-            self.increment_batch_index()
+            self.relate_nodes(node_index, rel, state_node_index)
             
 bgi = BatchGraphImporter('http://localhost:7474/db/data/')
 
