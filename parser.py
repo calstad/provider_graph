@@ -84,12 +84,12 @@ class RowParser:
 
     def parse_licences(self):
         licences = self.normalize_data(['taxonomy_code', 'number', 'state', 'taxonomy_switch'], self.row[48:106])
-        licences.remove_invalid_states(licences)
+        self.remove_invalid_states(licences)
         self.parsed_row['licences'] = licences
 
     def parse_identifiers(self):
         identifiers = self.normalize_data(['type_code', 'state', 'issuer'], self.row[107:306])
-        identifiers.remove_invalid_states(identifiers)
+        self.remove_invalid_states(identifiers)
         self.parsed_row['identifiers'] = identifiers
 
     def parse_taxonomy_groups(self):
@@ -104,13 +104,13 @@ class RowParser:
             tmp_dict.pop(k)
             return not any(tmp_dict.values())
 
-    def remove_invalid_states(records):
+    def remove_invalid_states(self, records):
         state_code_matcher = re.compile("^[A-Z]{2}$")
         for record in records:
             if not state_code_matcher.match(record['state']):
                 record['state'] = ''
 
-    def truncate_zipcodes(records):
+    def truncate_zipcodes(self, records):
         for record in records:
             truncated_zipcode = re.search("^\d{5}", record['zipcode'])
             record['zipcode'] = truncated_zipcode
@@ -132,5 +132,3 @@ class RowParser:
         for key, val in zip(keys, values):
             d[key] = val
         return d
-
-
