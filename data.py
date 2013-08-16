@@ -97,6 +97,9 @@ class BatchGraphImporter:
             self.relate_state_to_node(city_idx, city_state_idx, state)
 
     def create_license_and_identifier_nodes(self, record):
+        """Creates license and identifier nodes and relates them to the 
+           provider and a state if a valid state is present.
+        """
         npi = record['npi']['npi']
         entities = ['licenses', 'identifiers']
         for entity in entities:
