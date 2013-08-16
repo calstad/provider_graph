@@ -10,7 +10,7 @@ class RowParser:
         self.parse_provider()
         self.parse_addresses()
         self.parse_names()
-        self.parse_licences()
+        self.parse_licenses()
         self.parse_identifiers()
         self.parse_taxonomy_groups()
         return self.parsed_row
@@ -63,7 +63,6 @@ class RowParser:
                       'phone_number' : self.row[34],
                       'fax_number' : self.row[35]}]
         self.remove_emtpy_records(addresses, ['type'])
-        self.remove_invalid_states(addresses)
         self.truncate_zipcodes(addresses)
         self.parsed_row['addresses'] = addresses
 
@@ -82,14 +81,12 @@ class RowParser:
                   'suffix' : self.row[17]}]
         self.parsed_row['names'] = self.remove_emtpy_records(names, ['type'])
 
-    def parse_licences(self):
-        licences = self.normalize_data(['taxonomy_code', 'number', 'state', 'taxonomy_switch'], self.row[48:106])
-        self.remove_invalid_states(licences)
-        self.parsed_row['licences'] = licences
+    def parse_licenses(self):
+        licenses = self.normalize_data(['taxonomy_code', 'number', 'state', 'taxonomy_switch'], self.row[48:106])
+        self.parsed_row['licenses'] = licenses
 
     def parse_identifiers(self):
         identifiers = self.normalize_data(['type_code', 'state', 'issuer'], self.row[107:306])
-        self.remove_invalid_states(identifiers)
         self.parsed_row['identifiers'] = identifiers
 
     def parse_taxonomy_groups(self):
@@ -103,12 +100,6 @@ class RowParser:
         for k in excluded_keys:
             tmp_dict.pop(k)
             return not any(tmp_dict.values())
-
-    def remove_invalid_states(self, records):
-        state_code_matcher = re.compile("^[A-Z]{2}$")
-        for record in records:
-            if not state_code_matcher.match(record['state']):
-                record['state'] = ''
 
     def truncate_zipcodes(self, records):
         for record in records:
