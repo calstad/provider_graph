@@ -10,8 +10,11 @@ class BatchGraphImporter:
         for record in records:
             self.create_provider_subgraph(record)
         return self.batch.submit()
-        
-    def current_batch_index(self):
+
+    def current_batch_idx(self):
+        """Returns the index of the last item in the batch, which 
+           is needed to construct relationships between nodes in the batch.
+        """
         batch_length = len(self.batch.requests)
         if batch_length == 0:
             return 0
@@ -23,38 +26,56 @@ class BatchGraphImporter:
         self.create_npi_node(record)
         self.create_name_nodes(record)
         self.create_address_nodes(record)
+        self.create_license_and_identifier_nodes(record)
 
     def create_provider_node(self, record):
         self.batch.create(node(record['provider']))
-        self.current_provider_index = self.current_batch_index()
-        self.batch.add_indexed_node_or_fail('providers', 'npi', record['npi']['npi'], self.current_provider_index)
+        self.current_provider_idx = self.current_batch_idx()
+        self.batch.add_indexed_node_or_fail('providers', 'npi', record['npi']['npi'], self.current_provider_idx)
+
+    def relate_to_provider(self, node_idx, entity_type):
+        """Takes a node index and an entity type and creates a relation between the 
+           provider and the node of 'provider has_kind node'.
+        """
+        relation = "has_" + entity_type
+        self.batch.create(rel(self.current_provider_idx, relation, node_idx))
 
     def create_npi_node(self, record):
         npi = record['npi']['npi']
         npi_node = self.batch.create(record['npi'])
-        self.batch.create(rel(self.current_provider_index, 'has_npi', self.current_batch_index()))
-    
+        self.relate_to_provider(self.current_batch_idx(), 'npi')
+
     def create_name_nodes(self, record):
         names = record['names']
         for name in names:
             self.batch.create(name)
-            self.batch.create(rel(self.current_provider_index, 'has_name', self.current_batch_index()))
+            self.relate_to_provider(self.current_batch_idx(), 'name')
 
     def create_address_nodes(self, record):
+        npi = record['npi']['npi']
         addresses = record['addresses']
         for address in addresses:
             self.batch.create(address)
-            address_index = self.current_batch_index()
-            self.batch.create(rel(self.current_provider_index, 'has_address', address_index))
-            self.create_zipcode_node(address_index, address['zipcode'])
-    
-    def create_zipcode_node(self, address_index, zipcode):
+            address_idx = self.current_batch_idx()
+            self.relate_to_provider(address_idx, 'address')
+            self.create_zipcode_node(address_idx, address, npi)
+            self.create_city_node(address_idx, address, npi)
+
+    def create_zipcode_node(self, address_idx, address, npi):
+        zipcode = address['zipcode']
         if zipcode:
             self.batch.get_or_create_indexed_node('zipcodes', 'zipcode', zipcode, {'zipcode' : zipcode})
-            zipcode_index = self.current_batch_index()
-            self.batch.get_or_create_indexed_relationship('addresses', 'zipcode', zipcode, address_index, 'in_zipcode', zipcode_index)
-                
-bgi = BatchGraphImporter('http://localhost:7474/db/data/')
+            zipcode_idx = self.current_batch_idx()
+            # A hack due the fact py2neo doesent allow non-indexed
+            # relationshihps between unique indexed nodes.
+            zipcode_relationship_value = " ".join([npi, address['type'], zipcode])
+            self.batch.get_or_create_indexed_relationship('addresses',
+                                                          'zipcode',
+                                                          zipcode_relationship_value,
+                                                          address_idx,
+                                                          'in_zipcode',
+                                                          zipcode_idx)
+
     def create_city_node(self, address_idx, address, npi):
         """If given a valid city and state, creates a city to state path from address"""
         city, state = address['city'], address['state']
