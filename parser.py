@@ -96,12 +96,16 @@ class RowParser:
         return filter(lambda r : not self.empty_record(r, excluded_keys), coll)
 
     def empty_record(self, props, excluded_keys):
+        """Returns true if all values in props are blank strings exept for values
+        keyed by keys in excluded_keys
+        """
         tmp_dict = props.copy()
         for k in excluded_keys:
             tmp_dict.pop(k)
             return not any(tmp_dict.values())
 
     def truncate_zipcodes(self, records):
+        """Truncates zipcodes to be 5 digits long"""
         for record in records:
             truncated_zipcode = re.search("^\d{5}", record['zipcode'])
             if truncated_zipcode:
@@ -110,7 +114,11 @@ class RowParser:
                 record['zipcode'] = ''
             
     def normalize_data(self, names, data):
+        """Takes sequences of names and unnormalized records and returns a 
+           a collection dicts keyed by names, one for each non-blank record.
+        """
         result = []
+        # Split data into appropriate chunks and filter out all blank chunks.
         tuples = filter(lambda t: any(t), self.partition(data, len(names)))
         for t in tuples:
             result.append(self.lists_to_dict(names, t))
